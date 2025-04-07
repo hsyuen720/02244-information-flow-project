@@ -1,0 +1,9 @@
+# SQLite database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
