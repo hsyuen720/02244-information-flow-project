@@ -53,7 +53,7 @@ def setup_database():
                 purchase_date DATE
             )
         """)
-        # Insert initial data
+
         cursor.execute("""
             INSERT OR IGNORE INTO Customers (customer_id, name, address, address_label, opt_in, opt_in_label)
             VALUES (1, 'John Doe', '123 Main St', '{"read_by": ["1", "platform"], "write_by": ["1"]}', 1, '{"read_by": ["1", "platform"], "write_by": ["1"]}')
