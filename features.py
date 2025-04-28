@@ -10,11 +10,11 @@ def offer(vendor_id, **book_details):
 
         # get vendor_name
         # returns None {}
-        # vendor Restriction : customer : {V:{V、P}, P:{V、P}}
+        # vendor Restriction : vendor : {V:{V、P}, P:{V、P}}
         # effective readers: {V、P}
         # if_acts_for(offer, {C、V、P}):
-        # vendor := declassify(vendor, {C:{A}, A: {A}})
-        # effective readers: {A}
+        # vendor := declassify(vendor, {V:{C、V、P}, P:{C、V、P}，C:{C、V、P}})
+        # effective readers: {C、V、P}
         # We can find out that everyone can read it is actually equivalent to the {⊥}
         # Here, we get name by their id
 
