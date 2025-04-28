@@ -1,7 +1,6 @@
 from features import offer, search, purchase
 
 def menu():
-    """Display the terminal-based menu and handle user interactions."""
     print("Welcome to the Book Marketplace Prototype!")
     while True:
         try:

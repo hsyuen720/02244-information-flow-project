@@ -57,31 +57,6 @@ def search(customer_id, **search_query):
         return cursor.fetchall()
 
 def purchase(customer_id, offer_id, shipping_address):
-    """
-    Handle a book purchase with declassification of shipping address and optional marketing data sharing.
-    
-    Initial Security Label for shipping_address: {"read_by": [customer_id, "platform"], "write_by": [customer_id]}
-    - Owners: [customer_id]
-    - Readers(customer_id): [customer_id, "platform"]
-    - EffectiveReaders: [customer_id, "platform"]
-    - Writers: [customer_id]
-    - Ordering (⊑): Highly restrictive, high in the lattice.
-    
-    After Declassification (for vendor): {"read_by": [customer_id, "platform", vendor_id], "write_by": [customer_id]}
-    - Owners: [customer_id]
-    - Readers(customer_id): [customer_id, "platform", vendor_id]
-    - EffectiveReaders: [customer_id, "platform", vendor_id]
-    - Writers: [customer_id]
-    - Ordering (⊑): Less restrictive, lower in the lattice.
-    
-    Optional Marketing Declassification (if opt_in=1): {"read_by": [customer_id, "platform", vendor_id, "marketing"], "write_by": [customer_id]}
-    - Owners: [customer_id]
-    - Readers(customer_id): [customer_id, "platform", vendor_id, "marketing"]
-    - EffectiveReaders: [customer_id, "platform", vendor_id, "marketing"]
-    - Writers: [customer_id]
-    - Ordering (⊑): Even less restrictive, further down the lattice.
-    - Declassification Rule: Customer opts in to share data with "marketing" for a discount.
-    """
     with connect() as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT name, opt_in FROM Customers WHERE customer_id = ?", (customer_id,))
@@ -96,8 +71,7 @@ def purchase(customer_id, offer_id, shipping_address):
             raise ValueError("Offer does not exist")
         vendor_id, book_title, original_price = offer
         
-        # Apply discount if opted in for marketing
-        price = original_price * 0.95 if opt_in else original_price  # 5% discount
+        price = original_price * 0.95 if opt_in else original_price
         
         purchase_date = date.today()
         label = {"read_by": [str(customer_id), "platform"], "write_by": [str(customer_id)]}
@@ -108,11 +82,9 @@ def purchase(customer_id, offer_id, shipping_address):
         )
         purchase_id = cursor.lastrowid
         
-        # Declassify for vendor
         new_label = label.copy()
         new_label["read_by"].append(str(vendor_id))
         
-        # Further declassify for marketing if opted in
         if opt_in:
             new_label["read_by"].append("marketing")
             print(f"Customer opted in for marketing data sharing. Price reduced to ${price:.2f} (5% discount).")
