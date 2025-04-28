@@ -5,27 +5,34 @@ import json
 from datetime import date
 
 def offer(vendor_id, **book_details):
-    """
-    Allow a vendor to offer a book for sale.
-    
-    Security Label: {"read_by": ["public"], "write_by": [vendor_id, "platform"]}
-    - Owners: [vendor_id, "platform"]
-    - Readers(vendor_id): ["public"], Readers("platform"): ["public"]
-    - EffectiveReaders: ["public"]
-    - Writers: [vendor_id, "platform"]
-    - Ordering (⊑): Less restrictive, lower in the lattice.
-    """
     with connect() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT name FROM Vendors WHERE vendor_id = ?", (vendor_id,))
-        if not cursor.fetchone():
+
+        # get vendor_name
+        vendor_name = get_vendor_name(vendor_id)
+
+        if vendor_name is None:
             raise ValueError("Vendor does not exist")
-        keys = list(book_details.keys())
-        values = tuple(book_details.values())
-        placeholders = ','.join(['?'] * len(keys))
-        sql = f"INSERT INTO Book_Offers (vendor_id, {','.join(keys)}) VALUES (?, {placeholders})"
-        cursor.execute(sql, (vendor_id,) + values)
+
+        # if Book_Offers is none， set a default vendor_name
+        cursor.execute("PRAGMA table_info(Book_Offers)")
+        cols = [col[1] for col in cursor.fetchall()]
+        if "vendor_name" not in cols:
+            cursor.execute("ALTER TABLE Book_Offers ADD COLUMN vendor_name TEXT")
+
+        # insert vendor_name into book_details，and sql
+        book_details = dict(book_details)
+        book_details["vendor_name"] = vendor_name
+
+        keys         = list(book_details.keys())
+        placeholders = ",".join("?" for _ in keys)
+        sql = f"""
+            INSERT INTO Book_Offers (vendor_id,{','.join(keys)})
+            VALUES (?,{placeholders})
+        """
+        cursor.execute(sql, (vendor_id, *book_details.values()))
     return "Offer added successfully"
+
 
 def search(customer_id, **search_query):
     """
