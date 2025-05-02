@@ -7,7 +7,7 @@ from datetime import date
 def offer(vendor_id, **book_details):
     with connect() as conn:
         cursor = conn.cursor()
-
+        # vendor_id: {V:{V、P}, P:{V、P}}
         # get vendor_name
         # returns None {}
         # vendor Restriction : vendor : {V:{V、P}, P:{V、P}}
@@ -19,21 +19,22 @@ def offer(vendor_id, **book_details):
         # Here, we get name by their id
 
         vendor_name = get_vendor_name(vendor_id)
-
+        # vendor_name: {V:{⊥}, P:{⊥}}
         if vendor_name is None:
             raise ValueError("Vendor does not exist")
-
-        # if Book_Offers is none， set a default vendor_name
+        # vendor_name: {V:{⊥}, P:{⊥}}
+        # The vendor name opinion is declassified so it can be used for lookups without compromising security.
         cursor.execute("PRAGMA table_info(Book_Offers)")
         cols = [col[1] for col in cursor.fetchall()]
         if "vendor_name" not in cols:
             cursor.execute("ALTER TABLE Book_Offers ADD COLUMN vendor_name TEXT")
 
-        # insert vendor_name into book_details，and sql
         book_details = dict(book_details)
+        # bvendor_name : {V:{⊥}, P:{⊥}}
+        # book_details: {V:{⊥}, P:{⊥}}
         book_details["vendor_name"] = vendor_name
-
-        keys         = list(book_details.keys())
+        # book_details : {V:{⊥}, P:{⊥}}
+        keys= list(book_details.keys())
         placeholders = ",".join("?" for _ in keys)
         sql = f"""
             INSERT INTO Book_Offers (vendor_id,{','.join(keys)})
