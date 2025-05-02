@@ -43,27 +43,71 @@ def offer(vendor_id, **book_details):
     return "Offer added successfully"
 
 
-def search(customer_id, **search_query):
+def search(customer_id: int, **search_query):
     """
-    Allow a customer to search for books.
-    
-    Security Label for search query: {"read_by": [customer_id, "platform"], "write_by": [customer_id]}
-    - Owners: [customer_id]
-    - Readers(customer_id): [customer_id, "platform"]
-    - EffectiveReaders: [customer_id, "platform"]
-    - Writers: [customer_id]
-    - Ordering (⊑): More restrictive, higher in the lattice.
+    Let a customer search public book offers.
+
+    Security spec (Myers DLM):
+        • Label(input search_query) = {read_by:[customer_id,"platform"],
+                                       write_by:[customer_id]}
+        • Label(output)             = {read_by:["public"],
+                                       write_by:["platform"]}
+        No declassification needed (only public data involved).
     """
+
+    # Whitelist of allowed fields — Only search and return these columns
+    allowed_fields = {
+        "title", "author", "year", "edition", "publisher",
+        "condition", "description", "price", "vendor_name"
+    }
+
     with connect() as conn:
-        cursor = conn.cursor()
-        cursor.execute("SELECT name FROM Customers WHERE customer_id = ?", (customer_id,))
-        if not cursor.fetchone():
+        cur = conn.cursor()
+
+        # Verify that the customer exists
+        if cur.execute("SELECT 1 FROM Customers WHERE customer_id=?",
+                       (customer_id,)).fetchone() is None:
             raise ValueError("Customer does not exist")
-        conditions = [f"{key} LIKE ?" for key in search_query]
-        values = [f"%{value}%" for value in search_query.values()]
-        sql = f"SELECT * FROM Book_Offers WHERE {' AND '.join(conditions)}"
-        cursor.execute(sql, tuple(values))
-        return cursor.fetchall()
+
+        # Check that all search fields are valid
+        for k in search_query:
+            if k not in allowed_fields:
+                raise ValueError(f"Illegal search field: {k}")
+
+        # Build the WHERE clause (vendor_name needs a JOIN)
+        conds, vals = [], []
+        for k, v in search_query.items():
+            if k == "vendor_name":
+                conds.append("v.name LIKE ?")
+            else:
+                conds.append(f"o.{k} LIKE ?")
+            vals.append(f"%{v}%")
+        where_sql = " WHERE " + " AND ".join(conds) if conds else ""
+
+        # Query only public columns — vendor_name comes from v.name
+        select_cols = """
+            o.title, o.author, o.year, o.edition, o.publisher,
+            o.condition, o.description, o.price,
+            v.name AS vendor_name
+        """
+        sql = f"""
+            SELECT {select_cols}
+            FROM Book_Offers AS o
+            JOIN Vendors AS v ON o.vendor_id = v.vendor_id
+            {where_sql}
+        """
+        cur.execute(sql, tuple(vals))
+        rows = cur.fetchall()
+
+    # Package the results with the public security label
+    col_names = [
+        "title", "author", "year", "edition", "publisher",
+        "condition", "description", "price", "vendor_name"
+    ]
+    public_label = {"read_by": ["public"], "write_by": ["platform"]}
+    return [{"data": dict(zip(col_names, row)),
+             "label": json.dumps(public_label)} for row in rows]
+
 
 def purchase(customer_id, offer_id, shipping_address):
     with connect() as conn:
