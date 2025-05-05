@@ -38,11 +38,13 @@ def menu():
                 search_query = {search_field: search_value}
                 try:
                     results = search(customer_id, **search_query)
-                    if results:
-                        for result in results:
-                            print(result)
-                    else:
-                        print("No books found.")
+                    if not results:
+                        print("No match found. Showing all available books:")
+                        results = search(customer_id)  
+
+                    for result in results:
+                        print(result)
+
                 except ValueError as e:
                     print(f"Error: {e}")
 
