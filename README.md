@@ -1,26 +1,9 @@
 # Book Marketplace Prototype
 
-This is a terminal-based prototype for an electronic book marketplace, built as part of the "02244 Logic for Security" course project. It demonstrates secure information flow using Myers' Decentralized Label Model, implemented in Python with SQLite as the database.
-
-## Overview
-
-The Book Marketplace allows:
-- **Vendors** to offer books for sale.
-- **Customers** to search for books and purchase them.
-- Secure handling of sensitive data (e.g., shipping addresses) with explicit declassification.
-- **Selling User Data**: Optional opt-in for customers to share purchase data for marketing purposes, with a small discount.
-
 ### Features
 1. **Offer a Book**: Vendors can list books with details like title, author, and price.
 2. **Search for Books**: Customers can search books by any field (e.g., title, author).
 3. **Purchase a Book**: Customers can buy books, with shipping address shared with the vendor and optionally with marketing if opted in.
-
-### Security Model
-- Based on **Myers' Decentralized Label Model** (A. C. Myers and B. Liskov, 1997).
-- Uses security labels to enforce confidentiality and integrity:
-  - **Owners**: Control who can read/write data.
-  - **Readers/Writers**: Defined in labels (e.g., `{"read_by": ["public"], "write_by": ["vendor_id", "platform"]}`).
-  - **Declassification**: Explicitly relaxes constraints (e.g., sharing shipping address with vendors, or marketing data if opted in).
 
 ## Prerequisites
 
